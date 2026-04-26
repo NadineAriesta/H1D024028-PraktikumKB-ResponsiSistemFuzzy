@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Evaluator v2.5 | Fuzzy System</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Instrument+Serif:ital@1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            /* Palette from New Image (Mindazzle Plum) */
+            --bg-deep: #180018;
+            --bg-accent: #2a114b;
+            --primary: #824d69;
+            --secondary: #dfb6b2;
+            --tertiary: #fae5d8;
+            
+            --text-main: #fae5d8;
+            --text-muted: rgba(250, 229, 216, 0.6);
+            
+            /* Status Colors based on new palette */
+            --status-sangat-tolak: #f43f5e;
+            --status-tolak: #824d69;
+            --status-pertimbangkan: #dfb6b2;
+            --status-terima: #522959;
+            --status-sangat-layak: #fae5d8;
+            
+            --glass-bg: rgba(24, 0, 24, 0.75);
+            --glass-border: rgba(250, 229, 216, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            background-image: 
+                linear-gradient(rgba(250, 229, 216, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(250, 229, 216, 0.03) 1px, transparent 1px),
+                radial-gradient(at 0% 0%, rgba(130, 77, 105, 0.4) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(42, 17, 75, 0.4) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(24, 0, 24, 1) 0px, transparent 100%);
+            background-size: 60px 60px, 60px 60px, 100% 100%, 100% 100%, 100% 100%;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+            background-attachment: fixed;
+        }
+
+        /* Background Mesh Gradient (Non-blocking) */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(130, 77, 105, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(223, 182, 178, 0.05) 0%, transparent 40%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Removed noise overlay to prevent blocking clicks */
+
+
+        /* Floating Blobs */
+        .blob {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            filter: blur(100px);
+            opacity: 0.15;
+            z-index: 0;
+            border-radius: 50%;
+            animation: float 25s infinite alternate;
+            pointer-events: none; /* Make sure they don't block clicks */
+        }
+
+        .blob-1 { top: -100px; left: -100px; background: radial-gradient(circle, var(--tertiary) 0%, transparent 70%); }
+        .blob-2 { bottom: -100px; right: -100px; animation-delay: -5s; }
+        .blob-3 { top: 40%; left: 60%; width: 400px; height: 400px; background: radial-gradient(circle, var(--secondary) 0%, transparent 70%); animation-duration: 18s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(60px, 120px) scale(1.1); }
+        }
+
+        /* Typography Refined */
+        h1, h2, h3 {
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: -0.04em;
+            font-weight: 900;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            padding: 5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+            position: relative;
+            z-index: 50; /* Much higher than background */
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .main-title {
+            font-size: 5.5rem;
+            font-weight: 900;
+            line-height: 0.85;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            text-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            letter-spacing: -0.04em;
+        }
+
+        .italic-serif {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+            font-weight: 400;
+            text-transform: lowercase;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--tertiary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding-right: 10px;
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--tertiary) 50%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 500;
+            line-height: 1.6;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+        }
+
+        @media (min-width: 900px) {
+            main {
+                grid-template-columns: 1.1fr 0.9fr;
+                align-items: flex-start;
+            }
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 3rem;
+            box-shadow: 
+                0 30px 60px -12px rgba(0, 0, 0, 0.6),
+                inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(250, 229, 216, 0.2);
+            box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.7);
+        }
+
+        .badge-premium {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(130, 77, 105, 0.2);
+            color: var(--secondary);
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border: 1px solid rgba(130, 77, 105, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 2.5rem;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 800;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--tertiary);
+            width: 100%;
+        }
+
+        .label-title {
+            display: flex;
+            align-items: center;
+            gap: 4rem; /* Jarak dibuat sangat ekstrim untuk tes */
+        }
+
+        .icon-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            background: rgba(255,255,255,0.12); /* Warna lebih terang untuk konfirmasi update */
+            color: var(--primary);
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: all 0.3s ease;
+        }
+
+        .form-group:hover .icon-box {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .value-badge {
+            background: var(--bg-accent);
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            color: var(--tertiary);
+            font-weight: 800;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        /* Custom Slider */
+        .slider-wrapper {
+            position: relative;
+            height: 12px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .slider-progress {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, var(--bg-accent), var(--primary), var(--secondary));
+            border-radius: 12px;
+            z-index: 1;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            position: absolute;
+            z-index: 2;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 28px;
+            width: 28px;
+            border-radius: 50%;
+            background: #fff;
+            border: 7px solid var(--bg-accent);
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        input[type=range]:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+            border-color: var(--primary);
+        }
+
+        .btn-evaluate {
+            position: relative;
+            z-index: 100; /* Ensure it's on top of everything */
+            width: 100%;
+            padding: 1.4rem;
+            border: none;
+            border-radius: 1.5rem;
+            background: linear-gradient(135deg, var(--bg-accent) 0%, var(--primary) 100%);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 900;
+            font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            cursor: pointer !important;
+            transition: all 0.4s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.2rem;
+            margin-top: 1rem;
+            box-shadow: 0 20px 40px -15px rgba(130, 77, 105, 0.4);
+        }
+
+        .btn-evaluate:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -15px rgba(130, 77, 105, 0.6);
+            filter: brightness(1.15);
+        }
+
+        /* Result Section */
+        .result-header h2 {
+            font-size: 2.2rem;
+            margin-bottom: 0.4rem;
+            color: #fff;
+        }
+
+        .score-display {
+            width: 240px;
+            height: 240px;
+            margin: 2.5rem auto;
+            position: relative;
+        }
+
+        .circular-chart {
+            filter: drop-shadow(0 0 20px rgba(130, 77, 105, 0.3));
+        }
+
+        .circle-bg {
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 2;
+        }
+
+        .circle {
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke: var(--primary);
+            transition: all 1.8s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .percentage {
+            fill: #fff;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.6em;
+            font-weight: 900;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.9rem 3rem;
+            border-radius: 4rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 2.5rem;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .insight-box {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.06);
+            text-align: left;
+            line-height: 1.8;
+            font-size: 1.05rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Technical Grid */
+        .technical-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .tech-item {
+            background: rgba(255,255,255,0.03);
+            padding: 1.2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .tech-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .tech-val {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--tertiary);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.1);
+            color: var(--text-main);
+            padding: 1.2rem;
+            border-radius: 1.2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--tertiary);
+            transform: scale(1.02);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .d-none { display: none !important; }
+        
+        /* Loading Spinner */
+        .spinner {
+            width: 26px;
+            height: 26px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="container animate-fade-in">
+        <header>
+            <h1 class="main-title">Career <span class="italic-serif">Evaluator</span></h1>
+            <p class="subtitle">Bantu kamu nentuin apakah tawaran kerja itu layak diambil atau mending skip aja.</p>
+        </header>
+
+        <main>
+            <div class="glass-card form-section">
+                <div class="card-header">
+                    <h2>Cek Tawaran Kamu</h2>
+                    <p>Geser slider di bawah sesuai dengan kondisi tawaran kerja yang kamu dapet.</p>
+                </div>
+                    <!-- Gaji -->
+                    <div class="form-group">
+                        <label for="gaji">
+                            <div class="label-title">
+                                <div class="icon-box"><i class="ph-bold ph-currency-circle-dollar"></i></div>
+                                Gaji / Saku
+                            </div>
+                            <span class="value-badge" id="gaji-val">5.0 JT</span>
+                        </label>
+                        <div class="slider-wrapper">
+                            <div class="slider-progress" id="gaji-progress"></div>
+                            <input type="range" id="gaji" min="0" max="15" step="0.5" value="5">
+                        </div>
+                    </div>
+
+                    <!-- Relevansi -->
+                    <div class="form-group">
+                        <label for="relevansi">
+                            <div class="label-title">
+                                <div class="icon-box"><i class="ph-bold ph-graduation-cap"></i></div>
+                                Relevansi
+                            </div>
+                            <span class="value-badge" id="relevansi-val">5 / 10</span>
+                        </label>
+                        <div class="slider-wrapper">
+                            <div class="slider-progress" id="relevansi-progress"></div>
+                            <input type="range" id="relevansi" min="0" max="10" step="1" value="5">
+                        </div>
+                    </div>
+
+                    <!-- Fleksibilitas -->
+                    <div class="form-group">
+                        <label for="fleksibilitas">
+                            <div class="label-title">
+                                <div class="icon-box"><i class="ph-bold ph-calendar-check"></i></div>
+                                Fleksibilitas
+                            </div>
+                            <span class="value-badge" id="fleksibilitas-val">5 / 10</span>
+                        </label>
+                        <div class="slider-wrapper">
+                            <div class="slider-progress" id="fleksibilitas-progress"></div>
+                            <input type="range" id="fleksibilitas" min="0" max="10" step="1" value="5">
+                        </div>
+                    </div>
+
+                    <!-- Reputasi -->
+                    <div class="form-group">
+                        <label for="reputasi">
+                            <div class="label-title">
+                                <div class="icon-box"><i class="ph-bold ph-buildings"></i></div>
+                                Reputasi
+                            </div>
+                            <span class="value-badge" id="reputasi-val">5 / 10</span>
+                        </label>
+                        <div class="slider-wrapper">
+                            <div class="slider-progress" id="reputasi-progress"></div>
+                            <input type="range" id="reputasi" min="0" max="10" step="1" value="5">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-evaluate" id="btn-submit">
+                        <span>Lihat Hasilnya</span>
+                        <i class="ph-bold ph-arrow-right"></i>
+                        <div class="spinner d-none" id="spinner"></div>
+                    </button>
+                </form>
+
+                <div class="parameter-guide" style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <h4 style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.1em;">Cara Kerja:</h4>
+                    <ul style="list-style: none; font-size: 0.85rem; color: var(--text-muted); display: grid; gap: 0.8rem;">
+                        <li><i class="ph ph-check-circle" style="color: var(--primary);"></i> <b>Kompensasi:</b> Gaji pokok & tunjangan (dalam jutaan).</li>
+                        <li><i class="ph ph-check-circle" style="color: var(--primary);"></i> <b>Relevansi:</b> Seberapa cocok sama <i>passion</i> & skill kamu.</li>
+                        <li><i class="ph ph-check-circle" style="color: var(--primary);"></i> <b>Fleksibilitas:</b> Jam kerja, WFH/WFO, & beban kerja.</li>
+                        <li><i class="ph ph-check-circle" style="color: var(--primary);"></i> <b>Kredibilitas:</b> Nama besar perusahaan & jenjang karir.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="glass-card result-section d-none" id="result-container">
+                <div class="result-header">
+                    <h2>Hasil Evaluasi</h2>
+                    <p class="text-muted">Inference: Mamdani Model</p>
+                </div>
+
+                <div class="score-display">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="circle" id="score-circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="18" class="percentage" id="score-text">0%</text>
+                    </svg>
+                </div>
+                
+                <div id="status-badge" class="status-badge">Menunggu...</div>
+                
+                <div class="insight-box" id="insight-box">
+                    <p id="insight-text" style="font-weight: 500; font-size: 1.1rem;"></p>
+                </div>
+
+                <div id="quick-tips" style="margin-bottom: 2rem; padding: 1.2rem; background: rgba(130, 77, 105, 0.1); border-radius: 12px; border-left: 4px solid var(--primary); text-align: left;">
+                    <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--primary); display: block; margin-bottom: 0.5rem;">Tips Karir:</span>
+                    <p id="tips-text" style="font-size: 0.85rem; color: var(--tertiary); opacity: 0.9;"></p>
+                </div>
+
+                <div class="technical-grid">
+                    <div class="tech-item">
+                        <span class="tech-label">Kompensasi</span>
+                        <span class="tech-val" id="tech-gaji">-</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-label">Relevansi</span>
+                        <span class="tech-val" id="tech-relevansi">-</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-label">Fleksibilitas</span>
+                        <span class="tech-val" id="tech-fleksibilitas">-</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-label">Kredibilitas</span>
+                        <span class="tech-val" id="tech-reputasi">-</span>
+                    </div>
+                </div>
+                
+                <button class="btn-outline" id="btn-reset">
+                    <i class="ph-bold ph-arrow-counter-clockwise"></i> Reset Analisis
+                </button>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Advanced Fuzzy System &copy; 2026 &bull; Final Submission Project</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = ['gaji', 'relevansi', 'fleksibilitas', 'reputasi'];
+            const elements = {};
+            
+            inputs.forEach(id => {
+                elements[id] = {
+                    input: document.getElementById(id),
+                    val: document.getElementById(`${id}-val`),
+                    progress: document.getElementById(`${id}-progress`)
+                };
+            });
+
+            const form = document.getElementById('evaluation-form');
+            const resultContainer = document.getElementById('result-container');
+            const btnSubmit = document.getElementById('btn-submit');
+            const btnReset = document.getElementById('btn-reset');
+            const scoreText = document.getElementById('score-text');
+            const scoreCircle = document.getElementById('score-circle');
+            const statusBadge = document.getElementById('status-badge');
+            const insightText = document.getElementById('insight-text');
+
+            function updateUI(id) {
+                const item = elements[id];
+                const min = parseFloat(item.input.min);
+                const max = parseFloat(item.input.max);
+                const val = parseFloat(item.input.value);
+                const percent = ((val - min) / (max - min)) * 100;
+                
+                item.progress.style.width = `${percent}%`;
+                item.val.textContent = id === 'gaji' ? `${val.toFixed(1)} JT` : `${val} / 10`;
+            }
+
+            inputs.forEach(id => {
+                updateUI(id);
+                elements[id].input.addEventListener('input', () => updateUI(id));
+            });
+
+            // Ganti form submit menjadi direct button click untuk memastikan respon
+            btnSubmit.addEventListener('click', async (e) => {
+                e.preventDefault();
+                
+                // Pastikan spinner dan button state diatur
+                btnSubmit.disabled = true;
+                document.getElementById('spinner').classList.remove('d-none');
+
+                const data = {};
+                try {
+                    inputs.forEach(id => {
+                        const inputEl = document.getElementById(id);
+                        data[id] = parseFloat(inputEl.value);
+                    });
+
+                    // Simulasi proses AI (1.2 detik)
+                    await new Promise(r => setTimeout(r, 1200)); 
+                    
+                    const response = await fetch('/api/evaluate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    if(result.success) {
+                        showResult(result.data);
+                    } else {
+                        // Tampilkan error dari server jika ada
+                        alert("Error dari Server: " + (result.error || "Terjadi kesalahan yang tidak diketahui."));
+                        console.error("Full Traceback:", result.traceback);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Koneksi ke server bermasalah atau server crash.");
+                } finally {
+                    btnSubmit.disabled = false;
+                    document.getElementById('spinner').classList.add('d-none');
+                }
+            });
+
+            function showResult(data) {
+                resultContainer.classList.remove('d-none');
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
+                
+                const score = Math.round(data.score);
+                scoreCircle.setAttribute('stroke-dasharray', `${score}, 100`);
+                
+                let count = 0;
+                const interval = setInterval(() => {
+                    scoreText.textContent = `${count}%`;
+                    if(count >= score) clearInterval(interval);
+                    count++;
+                }, 15);
+
+                statusBadge.textContent = data.status;
+                
+                const colors = {
+                    'Sangat Tolak': '#f43f5e',
+                    'Tolak': '#824d69',
+                    'Pertimbangkan': '#dfb6b2',
+                    'Terima': '#522959',
+                    'Sangat Layak': '#fae5d8'
+                };
+                
+                const color = colors[data.status] || '#fae5d8';
+                scoreCircle.style.stroke = color;
+                statusBadge.style.color = color;
+                
+                // Pastikan user tahu proses sudah selesai
+                alert("Hasil evaluasi berhasil dihitung!");
+
+                // Scroll otomatis ke hasil agar langsung terlihat
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Animasi Skor
+                let currentScore = 0;
+                const targetScore = Math.round(data.score || 0);
+                const duration = 1500;
+                const startTime = performance.now();
+                const scoreDisplay = scoreText;
+                const progressCircle = scoreCircle;
+
+                function updateScore(timestamp) {
+                    const elapsed = timestamp - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    currentScore = Math.floor(progress * targetScore);
+                    
+                    scoreDisplay.textContent = `${currentScore}%`;
+                    const offset = 100 - (currentScore);
+                    if(progressCircle) progressCircle.style.strokeDasharray = `${currentScore}, 100`;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(updateScore);
+                    }
+                }
+                requestAnimationFrame(updateScore);
+
+                // Update Status & Insight
+                statusBadge.textContent = data.status || "Unknown";
+                
+                const insights = {
+                    'Sangat Tolak': 'Waduh, mending cari yang lain aja. Angka-angkanya nggak masuk akal buat karir kamu kedepannya.',
+                    'Tolak': 'Sepertinya kurang oke. Masih banyak tawaran yang lebih baik di luar sana yang lebih menghargai skill kamu.',
+                    'Pertimbangkan': 'Boleh juga, tapi jangan langsung "yes". Coba nego lagi bagian gaji atau fleksibilitasnya biar makin mantap.',
+                    'Terima': 'Ini tawaran bagus! Paketnya udah cukup adil dan cocok banget buat ngembangin karir kamu sekarang.',
+                    'Sangat Layak': 'Gila, ini sih emas! Nggak usah mikir dua kali, langsung ambil aja sebelum disamber orang lain.'
+                };
+
+                const tips = {
+                    'Sangat Tolak': 'Jangan buang waktu di sini. Fokus perbaiki portofolio kamu buat cari yang jauh lebih layak.',
+                    'Tolak': 'Tolak dengan sopan. Kamu bisa kasih tau alasan kamu soal kompensasi atau role yang kurang pas.',
+                    'Pertimbangkan': 'Siapin argumen buat negosiasi. Fokus di bagian yang menurut kamu masih kurang (misal: minta WFH).',
+                    'Terima': 'Cek lagi detail kontraknya (tunjangan, asuransi, dll). Kalau aman, langsung gas pol!',
+                    'Sangat Layak': 'Langsung kasih konfirmasi secepatnya. Jangan biarkan HR nunggu terlalu lama buat tawaran se-oke ini.'
+                };
+
+                insightText.textContent = insights[data.status] || data.status || 'Data tidak tersedia';
+                document.getElementById('tips-text').textContent = tips[data.status] || 'Siapkan langkah berikutnya!';
+
+                // Update Data Teknis
+                document.getElementById('tech-gaji').textContent = `${parseFloat(elements.gaji.input.value).toFixed(1)} JT`;
+                document.getElementById('tech-relevansi').textContent = `${elements.relevansi.input.value}/10`;
+                document.getElementById('tech-fleksibilitas').textContent = `${elements.fleksibilitas.input.value}/10`;
+                document.getElementById('tech-reputasi').textContent = `${elements.reputasi.input.value}/10`;
+            }
+
+            btnReset.addEventListener('click', () => {
+                resultContainer.classList.add('d-none');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
